@@ -8,16 +8,18 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+#import os  # Uncomment if using relative path for chromedriver
 
+# Absolute path to chromedriver (change this as needed)
+ABSOLUTE_DRIVER_PATH = 'C:/Users/masca/Documents/Dev/newgen-scrappers/chromedriver-win64/chromedriver.exe'
 
 def scrape_friends_for_gamertag(driver, wait, gamertag):
     url = f"https://www.xbox.com/en-US/play/user/{gamertag}"
     driver.get(url)
     print(f"\nVisiting profile of {gamertag}")
 
-    time.sleep(random.uniform(3.5, 7.5))  # Simulate human reading the page
+    time.sleep(random.uniform(3.5, 7.5))  
 
-    # Click 'Friends' button
     try:
         friends_button = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//div[contains(text(), 'Friends')]/parent::div")
@@ -28,7 +30,6 @@ def scrape_friends_for_gamertag(driver, wait, gamertag):
         print(f"Failed to click Friends button on {gamertag}: {e}")
         return []
 
-    # Wait for friends list to load
     try:
         wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, ".FriendsAndFollowersList-module__userList___RYzIa")
@@ -38,7 +39,6 @@ def scrape_friends_for_gamertag(driver, wait, gamertag):
         print(f"Friends list did not load for {gamertag}: {e}")
         return []
 
-    # Extract friend names
     friends = []
     try:
         friend_elements = driver.find_elements(By.CSS_SELECTOR, ".Gamertag-module__baseGamerTag___lwdQS")
@@ -56,7 +56,14 @@ def scrape_friends_for_gamertag(driver, wait, gamertag):
 
 
 def crawl_friend_graph(start_gamertag, max_profiles=150):
-    service = Service('C:/Users/masca/Documents/Dev/newgen-scrappers/chromedriver-win64/chromedriver.exe')
+    # Use the absolute path variable for chromedriver
+    service = Service(ABSOLUTE_DRIVER_PATH)
+
+    # --- Optional: Use this for relative pathing (uncomment the lines below and comment the line above) ---
+    # import os
+    # driver_path = os.path.join(os.path.dirname(__file__), "chromedriver", "chromedriver.exe")
+    # service = Service(driver_path)
+
     options = Options()
     options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(service=service, options=options)
@@ -86,12 +93,10 @@ def crawl_friend_graph(start_gamertag, max_profiles=150):
             if friend not in visited and friend not in queue:
                 queue.append(friend)
 
-        # Random sleep to reduce detection risk
         sleep_time = random.uniform(3, 7)
         print(f"Sleeping {sleep_time:.1f} seconds to avoid rate limiting...")
         time.sleep(sleep_time)
 
-        # Longer pause every 5 profiles
         if profiles_scraped % 5 == 0:
             long_pause = random.uniform(10, 20)
             print(f"Taking a long pause of {long_pause:.1f} seconds after {profiles_scraped} profiles...")
@@ -104,14 +109,12 @@ def crawl_friend_graph(start_gamertag, max_profiles=150):
 def visualize_friend_graph(graph):
     G = nx.Graph()
 
-    # Add edges
     for user, friends in graph.items():
         G.add_node(user)
         for friend in friends:
             G.add_node(friend)
             G.add_edge(user, friend)
 
-    # Spring layout for clustering
     pos = nx.spring_layout(G, k=0.5, iterations=50)
 
     plt.figure(figsize=(12, 8))
@@ -125,7 +128,7 @@ def visualize_friend_graph(graph):
 
 
 if __name__ == "__main__":
-    start_user = "Jadenize"  # Change this to your starting profile
+    start_user = "Jadenize"  # start user change
     friend_graph = crawl_friend_graph(start_user, max_profiles=50)
 
     print("\nFinal friend graph data:")
